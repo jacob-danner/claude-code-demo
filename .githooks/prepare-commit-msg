@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Git hook that uses Claude to generate commit messages based on the diff
+# This is a prepare-commit-msg hook that will run before the commit message editor opens
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+
+# Only run for regular commits (not merges, amends, etc.)
+if [ -z "$COMMIT_SOURCE" ]; then
+    # Get the staged diff
+    DIFF=$(git diff --cached)
+    
+    # Only proceed if there are staged changes
+    if [ -n "$DIFF" ]; then
+        echo "Generating commit message with Claude..."
+        
+        # Use Claude to generate commit message based on the diff
+        CLAUDE_MSG=$(claude -p "write the commit message based on the diff. follow conventions. output the commit message only." 2>/dev/null)
+        
+        # Check if Claude command succeeded
+        if [ $? -eq 0 ] && [ -n "$CLAUDE_MSG" ]; then
+            # Prepend Claude's message to the existing commit message file
+            {
+                echo "$CLAUDE_MSG"
+                echo ""
+                cat "$COMMIT_MSG_FILE"
+            } > "$COMMIT_MSG_FILE.tmp"
+            mv "$COMMIT_MSG_FILE.tmp" "$COMMIT_MSG_FILE"
+        else
+            echo "Warning: Could not generate commit message with Claude"
+        fi
+    fi
+fi
