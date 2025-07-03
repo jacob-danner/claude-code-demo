@@ -101,14 +101,15 @@ jobs:
         # Get the PR number
         PR_NUMBER=${{ github.event.number }}
         
-        # Read the generated description
-        DESCRIPTION=$(cat pr_description.md)
+        # Read the generated description and properly escape it for JSON
+        DESCRIPTION=$(cat pr_description.md | jq -Rs .)
         
-        # Update the PR description using GitHub API
+        # Update the PR description using GitHub API with proper JSON escaping
         curl -X PATCH \
           -H "Authorization: token $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: application/json" \
           "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER" \
-          -d "{\"body\":\"$DESCRIPTION\"}"
+          -d "{\"body\":$DESCRIPTION}"
         
         echo "PR description updated successfully!"
