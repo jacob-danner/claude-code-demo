@@ -37,56 +37,58 @@ jobs:
         echo "Commits:"
         cat commit_messages.txt
     
-    - name: Install Claude CLI
-      run: |
-        curl -fsSL https://claude.ai/install.sh | sh
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup Node.js for Claude Code
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: Install Claude Code
+      run: npm install -g @anthropic-ai/claude-code
     
     - name: Generate PR description
       env:
         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      timeout-minutes: 5
       run: |
-        # Create a comprehensive prompt for Claude
-        cat > pr_prompt.txt << 'EOF'
-        Analyze the following pull request and generate a professional PR description in markdown format.
-        
+        # Create prompt with PR information
+        PROMPT="Analyze the following pull request and generate a professional PR description in markdown format.
+
         Please provide:
         1. A clear summary of what this PR does
-        2. Key changes made (bulleted list)
+        2. Key changes made (bulleted list) 
         3. Testing notes (if applicable)
         4. Any breaking changes or migration notes
         5. Reviewer notes (if there are specific areas to focus on)
-        
+
         Use this template structure:
         ## Summary
         [Brief description of the PR]
-        
+
         ## Changes
         - [Change 1]
         - [Change 2]
-        
+
         ## Testing
         - [How to test this change]
-        
+
         ## Notes
         - [Any additional context]
-        
+
         Here's the information about this PR:
-        
+
         **Changed Files:**
         $(cat changed_files.txt)
-        
+
         **Commit Messages:**
         $(cat commit_messages.txt)
-        
+
         **Code Changes:**
-        $(cat pr_changes.diff)
-        
-        Please generate a professional, informative PR description based on this information.
-        EOF
+        $(head -100 pr_changes.diff)
+
+        Please generate a professional, informative PR description based on this information."
         
         # Generate description using Claude
-        claude -p "$(cat pr_prompt.txt)" > pr_description.md
+        claude -p "$PROMPT" --output-format json --dangerously-skip-permissions > pr_description.md
         
         # Show generated description
         echo "Generated PR description:"
