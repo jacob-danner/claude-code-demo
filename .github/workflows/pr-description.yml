@@ -85,10 +85,10 @@ jobs:
         **Code Changes:**
         $(head -100 pr_changes.diff)
 
-        Please generate a professional, informative PR description based on this information."
+        Please generate a professional, informative PR description based on this information. Output only the markdown description, no JSON, no metadata, no explanations."
         
-        # Generate description using Claude
-        claude -p "$PROMPT" --output-format json --dangerously-skip-permissions > pr_description.md
+        # Generate description using Claude (text output only)
+        claude -p "$PROMPT" --dangerously-skip-permissions > pr_description.md
         
         # Show generated description
         echo "Generated PR description:"
