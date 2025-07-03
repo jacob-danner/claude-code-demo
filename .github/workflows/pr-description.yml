@@ -1,0 +1,115 @@
+name: Auto PR Description
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  generate-description:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Get PR changes
+      id: changes
+      run: |
+        # Get the base branch for comparison
+        BASE_SHA=$(git merge-base origin/${{ github.base_ref }} HEAD)
+        
+        # Get diff of changes
+        git diff $BASE_SHA..HEAD > pr_changes.diff
+        
+        # Get list of changed files
+        git diff --name-only $BASE_SHA..HEAD > changed_files.txt
+        
+        # Get commit messages
+        git log --oneline $BASE_SHA..HEAD > commit_messages.txt
+        
+        echo "Files changed:"
+        cat changed_files.txt
+        echo "Commits:"
+        cat commit_messages.txt
+    
+    - name: Setup Node.js for Claude Code
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: Install Claude Code
+      run: npm install -g @anthropic-ai/claude-code
+    
+    - name: Generate PR description
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      timeout-minutes: 5
+      run: |
+        # Create prompt with PR information
+        PROMPT="Analyze the following pull request and generate a professional PR description in markdown format.
+
+        Please provide:
+        1. A clear summary of what this PR does
+        2. Key changes made (bulleted list) 
+        3. Testing notes (if applicable)
+        4. Any breaking changes or migration notes
+        5. Reviewer notes (if there are specific areas to focus on)
+
+        Use this template structure:
+        ## Summary
+        [Brief description of the PR]
+
+        ## Changes
+        - [Change 1]
+        - [Change 2]
+
+        ## Testing
+        - [How to test this change]
+
+        ## Notes
+        - [Any additional context]
+
+        Here's the information about this PR:
+
+        **Changed Files:**
+        $(cat changed_files.txt)
+
+        **Commit Messages:**
+        $(cat commit_messages.txt)
+
+        **Code Changes:**
+        $(head -100 pr_changes.diff)
+
+        Please generate a professional, informative PR description based on this information. Output only the markdown description, no JSON, no metadata, no explanations."
+        
+        # Generate description using Claude (text output only)
+        claude -p "$PROMPT" --dangerously-skip-permissions > pr_description.md
+        
+        # Show generated description
+        echo "Generated PR description:"
+        cat pr_description.md
+    
+    - name: Update PR description
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Get the PR number
+        PR_NUMBER=${{ github.event.number }}
+        
+        # Read the generated description and properly escape it for JSON
+        DESCRIPTION=$(cat pr_description.md | jq -Rs .)
+        
+        # Update the PR description using GitHub API with proper JSON escaping
+        curl -X PATCH \
+          -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: application/json" \
+          "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER" \
+          -d "{\"body\":$DESCRIPTION}"
+        
+        echo "PR description updated successfully!"

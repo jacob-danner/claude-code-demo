@@ -28,3 +28,7 @@ Requires `.env` file with:
 ```
 API_KEY=your_openweathermap_api_key
 ```
+
+## Commit Guidelines
+
+- When committing, there is no need for a message flag. There is a commit hook that will already fill it out (using claude code)
