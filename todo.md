@@ -16,12 +16,11 @@ DONE
 
 ## Phase 2 - Is it good weather to bike right now?
 
-If 3/5 criteria are met, weather is good enough to bike
+If 2/4 criteria are met, weather is good enough to bike
 
 ### Good Weather Criteria for Biking
 
 - **Temperature**: 70°F - 90°F ideal range
 - **Precipitation**: No rain
 - **Wind Speed**: 13 mph or less
-- **Visibility**: Good (no fog/haze)
-- **Humidity**: up to 70%
+- **Humidity**: Less than 70%
