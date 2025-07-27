@@ -16,7 +16,7 @@ DONE
 
 ## Phase 2 - Is it good weather to bike right now?
 
-If 2/4 criteria are met, weather is good enough to bike
+Use Current Weather API to fetch conditions. If 2/4 criteria are met, weather is good enough to bike
 
 ### Good Weather Criteria for Biking
 
